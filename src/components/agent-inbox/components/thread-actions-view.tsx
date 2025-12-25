@@ -7,7 +7,7 @@ import {
   AlertCircle,
   Loader,
 } from "lucide-react";
-import { ThreadData, GenericThreadData } from "../types";
+import { ThreadData, GenericThreadData, Email, EmailAttachment } from "../types";
 import useInterruptedActions from "../hooks/use-interrupted-actions";
 import { constructOpenInStudioURL } from "../utils";
 import { ThreadIdCopyable } from "./thread-id";
@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { useQueryParams } from "../hooks/use-query-params";
 import { useThreadsContext } from "../contexts/ThreadContext";
 import { useState } from "react";
+import { MarkdownText } from "@/components/ui/markdown-text";
+import { EmailAttachments } from "./email-attachments";
 
 import {
   Tooltip,
@@ -415,30 +417,141 @@ export function ThreadActionsView<
             </div>
           )}
 
-          {/* Thread information summary */}
+          {/* Email Input Details */}
+          {(() => {
+            const threadValues = threadData.thread.values;
+            const emailInput = threadValues?.email_input as any;
+
+            // Debug logging - log the entire email_input structure
+            if (threadValues) {
+              logger.log("Thread values:", threadValues);
+              logger.log("Email input:", emailInput);
+              if (emailInput) {
+                logger.log("Email input keys:", Object.keys(emailInput));
+                logger.log("Email input attachments:", emailInput.attachments);
+                logger.log("Email input attachments type:", typeof emailInput.attachments);
+                logger.log("Email input attachments is array:", Array.isArray(emailInput.attachments));
+              }
+            }
+
+            if (emailInput) {
+              // Try multiple possible field names for attachments, including PDF attachments
+              let attachments =
+                emailInput.attachments ||
+                emailInput.Attachments ||
+                emailInput.attachment ||
+                emailInput.files ||
+                emailInput.pdf_attachments ||
+                emailInput.pdfAttachments ||
+                emailInput["PDF attachments"] ||
+                emailInput["pdf attachments"] ||
+                emailInput.PDF_attachments ||
+                [];
+
+              // Get bucket name if provided in email_input
+              const bucketName =
+                emailInput.bucket_name ||
+                emailInput.bucketName ||
+                emailInput.gcs_bucket ||
+                emailInput.gcsBucket ||
+                emailInput.bucket;
+
+              // If attachments is a string (URL), convert to array
+              if (typeof attachments === "string") {
+                attachments = [{ url: attachments }];
+              }
+
+              // If it's a single object, convert to array
+              if (attachments && !Array.isArray(attachments) && typeof attachments === "object") {
+                attachments = [attachments];
+              }
+
+              // Check if attachments is an array and has items
+              const hasAttachments =
+                Array.isArray(attachments) && attachments.length > 0;
+
+              logger.log("Final attachments:", attachments);
+              logger.log("Has attachments:", hasAttachments);
+              logger.log("Bucket name:", bucketName);
+              logger.log("Attachment structure:", JSON.stringify(attachments, null, 2));
+
+              return (
+                <div className="flex flex-col gap-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+                  <h3 className="font-medium">Email Input</h3>
+
+                  {emailInput.subject && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm font-semibold text-gray-700">
+                        Subject:
+                      </span>
+                      <p className="text-sm text-gray-900">{emailInput.subject}</p>
+                    </div>
+                  )}
+
+                  {emailInput.body && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm font-semibold text-gray-700">
+                        Body:
+                      </span>
+                      <div className="prose prose-sm max-w-none">
+                        <MarkdownText className="text-wrap break-words whitespace-pre-wrap">
+                          {emailInput.body}
+                        </MarkdownText>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      Attachments:
+                    </span>
+                    {hasAttachments ? (
+                      <EmailAttachments
+                        attachments={attachments}
+                        bucketName={bucketName}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        <p>No attachments found.</p>
+                        <p className="text-xs mt-1">
+                          Debug: attachments = {JSON.stringify(attachments)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {!emailInput.subject &&
+                    !emailInput.body &&
+                    !hasAttachments && (
+                      <p className="text-sm text-gray-500 italic">
+                        No email input data available.
+                      </p>
+                    )}
+                </div>
+              );
+            }
+
+            // Fallback to thread details if email_input is not available
+            return (
           <div className="flex flex-col gap-3 p-4 border border-gray-200 rounded-md bg-gray-50">
             <h3 className="font-medium">Thread Details</h3>
-
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <span className="font-medium text-gray-700">Status:</span>
                 <span className="ml-2 capitalize">{threadData.status}</span>
               </div>
-
               <div>
                 <span className="font-medium text-gray-700">Created:</span>
                 <span className="ml-2">
                   {new Date(threadData.thread.created_at).toLocaleString()}
                 </span>
               </div>
-
               <div>
                 <span className="font-medium text-gray-700">Last updated:</span>
                 <span className="ml-2">
                   {new Date(threadData.thread.updated_at).toLocaleString()}
                 </span>
               </div>
-
               <div>
                 <span className="font-medium text-gray-700">ID:</span>
                 <span className="ml-2 font-mono text-xs">
@@ -447,6 +560,8 @@ export function ThreadActionsView<
               </div>
             </div>
           </div>
+            );
+          })()}
 
           <p className="text-sm text-gray-600">
             View the thread state in the &quot;State&quot; tab for detailed

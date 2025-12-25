@@ -1,5 +1,5 @@
 {
-  "name": "agent-inbox",
+  "name": "fionaa",
   "author": "Brace Sproul",
   "private": true,
   "scripts": {
@@ -30,6 +30,7 @@
     "@codemirror/lang-sql": "^6.8.0",
     "@codemirror/lang-xml": "^6.1.0",
     "@faker-js/faker": "^9.2.0",
+    "@google-cloud/storage": "^7.18.0",
     "@langchain/anthropic": "^0.3.6",
     "@langchain/community": "^0.3.9",
     "@langchain/core": "^0.3.14",

@@ -71,6 +71,30 @@ export function AddAgentInboxDialog({
     setIsSubmitting(true);
     setErrorMessage(null);
 
+    // Basic validation
+    if (!graphId.trim()) {
+      setErrorMessage("Graph ID is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!deploymentUrl.trim()) {
+      setErrorMessage("Deployment URL is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(deploymentUrl);
+    } catch (error) {
+      setErrorMessage(
+        "Invalid deployment URL format. Please enter a valid URL (e.g., https://my-agent.default.us.langgraph.app or http://localhost:8123)"
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const isDeployed = isDeployedUrl(deploymentUrl);
       let inboxId = uuidv4();
@@ -90,7 +114,7 @@ export function AddAgentInboxDialog({
 
         if (!apiKey && isDeployed) {
           setErrorMessage(
-            "API key is required for deployed LangGraph instances"
+            "LangSmith API key is required for deployed LangGraph instances. Please add your API key in Settings first, or enter it in the field below."
           );
           setIsSubmitting(false);
           return;
@@ -100,6 +124,14 @@ export function AddAgentInboxDialog({
         try {
           const deploymentInfo = await fetchDeploymentInfo(deploymentUrl);
           logger.log("Got deployment info:", deploymentInfo);
+
+          if (!deploymentInfo) {
+            setErrorMessage(
+              `Failed to fetch deployment info from ${deploymentUrl}/info. Please verify:\n1. The deployment URL is correct\n2. The deployment is running and accessible\n3. The /info endpoint is available`
+            );
+            setIsSubmitting(false);
+            return;
+          }
 
           if (deploymentInfo?.host?.project_id) {
             // Generate ID in format: project_id:graphId
@@ -119,7 +151,7 @@ export function AddAgentInboxDialog({
         } catch (error) {
           logger.error("Error fetching deployment info:", error);
           setErrorMessage(
-            "Failed to get deployment info. Check your deployment URL."
+            `Failed to get deployment info from ${deploymentUrl}/info. Error: ${error instanceof Error ? error.message : String(error)}. Please check:\n1. The deployment URL is correct\n2. The deployment is running\n3. Your network connection`
           );
           setIsSubmitting(false);
           return;
@@ -144,7 +176,7 @@ export function AddAgentInboxDialog({
 
       toast({
         title: "Success",
-        description: "Agent inbox added successfully",
+        description: "Inbox added successfully",
         duration: 3000,
       });
       updateQueryParams(NO_INBOXES_FOUND_PARAM);
@@ -191,7 +223,7 @@ export function AddAgentInboxDialog({
       <DialogContent className="sm:max-w-[425px]">
         {noInboxesFoundParam === "true" ? (
           <DialogHeader>
-            <DialogTitle>Welcome to the Agent Inbox!</DialogTitle>
+            <DialogTitle>Welcome to FIONAA!</DialogTitle>
             <DialogDescription>
               <p>To get started, please add an inbox below.</p>
               <p>
@@ -211,7 +243,7 @@ export function AddAgentInboxDialog({
         ) : (
           <DialogHeader>
             <DialogTitle>Add Inbox</DialogTitle>
-            <DialogDescription>Add a new agent inbox.</DialogDescription>
+            <DialogDescription>Add a new inbox.</DialogDescription>
           </DialogHeader>
         )}
         <form
@@ -291,7 +323,9 @@ export function AddAgentInboxDialog({
           )}
 
           {errorMessage && (
-            <div className="text-red-500 text-sm w-full">{errorMessage}</div>
+            <div className="text-red-500 text-sm w-full whitespace-pre-line">
+              {errorMessage}
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">

@@ -23,15 +23,33 @@ export const InterruptedInboxItem = <ThreadValues extends Record<string, any>>({
   const { updateQueryParams } = useQueryParams();
   const firstInterrupt = threadData.interrupts?.[0];
 
-  const descriptionPreview = firstInterrupt?.description?.slice(0, 65);
-  const descriptionTruncated =
-    firstInterrupt?.description && firstInterrupt.description.length > 65;
+  // Extract email sender and subject from thread values
+  const threadValues = threadData.thread.values;
+  const emailInput = threadValues?.email_input as any;
+  const emailSender = emailInput?.from_email || emailInput?.from || emailInput?.sender || null;
+  const emailSubject = emailInput?.subject || emailInput?.Subject || null;
 
+  // Use email info if available, otherwise fall back to interrupt action
   const action = firstInterrupt?.action_request?.action;
-  const title = !action || action === IMPROPER_SCHEMA ? "Interrupt" : action;
+  const hasEmailInfo = emailSender && emailSubject;
+  
+  // Title: Use email sender if available, otherwise use interrupt action
+  const title = hasEmailInfo 
+    ? emailSender 
+    : (!action || action === IMPROPER_SCHEMA ? "Interrupt" : action);
+
+  // Description: Use email subject if available, otherwise use interrupt description
+  const descriptionPreview = hasEmailInfo
+    ? emailSubject
+    : firstInterrupt?.description?.slice(0, 65);
+  const descriptionTruncated = hasEmailInfo
+    ? emailSubject && emailSubject.length > 65
+    : firstInterrupt?.description && firstInterrupt.description.length > 65;
+
   const hasNoDescription =
-    !firstInterrupt ||
-    (!firstInterrupt.description && !threadData.invalidSchema);
+    !hasEmailInfo &&
+    (!firstInterrupt ||
+    (!firstInterrupt.description && !threadData.invalidSchema));
 
   const updatedAtDateString = format(
     new Date(threadData.thread.updated_at),

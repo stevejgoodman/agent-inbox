@@ -87,6 +87,16 @@ export function GenericInboxItem<
     "MM/dd h:mm a"
   );
 
+  // Extract email sender and subject from thread values
+  const threadValues = threadData.thread.values;
+  const emailInput = threadValues?.email_input as any;
+  const emailSender = emailInput?.from_email || emailInput?.from || emailInput?.sender || null;
+  const emailSubject = emailInput?.subject || emailInput?.Subject || null;
+
+  // Fallback to thread ID if email data is not available
+  const displaySender = emailSender || "Unknown Sender";
+  const displaySubject = emailSubject || `Thread: ${threadData.thread.thread_id.slice(0, 6)}...`;
+
   return (
     <div
       onClick={() =>
@@ -106,12 +116,16 @@ export function GenericInboxItem<
 
       <div
         className={cn(
-          "col-span-6 flex items-center justify-start gap-2",
+          "col-span-6 flex flex-col justify-center gap-1",
           !selectedInbox && "col-span-9"
         )}
       >
-        <p className="text-sm font-semibold text-black">Thread ID:</p>
-        <ThreadIdCopyable showUUID threadId={threadData.thread.thread_id} />
+        <p className="text-sm font-semibold text-black truncate">
+          {displaySender}
+        </p>
+        <p className="text-sm text-gray-600 truncate">
+          {displaySubject}
+        </p>
       </div>
 
       {selectedInbox && (

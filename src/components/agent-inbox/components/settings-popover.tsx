@@ -10,11 +10,16 @@ import React from "react";
 import { PillButton } from "@/components/ui/pill-button";
 import { Label } from "@/components/ui/label";
 import { useLocalStorage } from "../hooks/use-local-storage";
-import { INBOX_PARAM, LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY } from "../constants";
+import {
+  INBOX_PARAM,
+  LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY,
+  GCP_SERVICE_ACCOUNT_KEY_LOCAL_STORAGE_KEY,
+} from "../constants";
 import { useThreadsContext } from "../contexts/ThreadContext";
 import { useQueryParams } from "../hooks/use-query-params";
 import { ThreadStatusWithAll } from "../types";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { forceInboxBackfill, isBackfillCompleted } from "../utils/backfill";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +30,7 @@ export function SettingsPopover() {
   const langchainApiKeyNotSet = React.useRef(true);
   const [open, setOpen] = React.useState(false);
   const [langchainApiKey, setLangchainApiKey] = React.useState("");
+  const [gcpServiceAccountKey, setGcpServiceAccountKey] = React.useState("");
   const { getItem, setItem } = useLocalStorage();
   const { getSearchParam } = useQueryParams();
   const { fetchThreads } = useThreadsContext();
@@ -51,11 +57,36 @@ export function SettingsPopover() {
     }
   }, [langchainApiKey]);
 
+  React.useEffect(() => {
+    try {
+      if (typeof window === "undefined") {
+        return;
+      }
+      if (gcpServiceAccountKey) return;
+
+      const gcpServiceAccountKeyLS = getItem(
+        GCP_SERVICE_ACCOUNT_KEY_LOCAL_STORAGE_KEY
+      );
+      if (gcpServiceAccountKeyLS) {
+        setGcpServiceAccountKey(gcpServiceAccountKeyLS);
+      }
+    } catch (e) {
+      logger.error("Error getting/setting GCP service account key", e);
+    }
+  }, [gcpServiceAccountKey]);
+
   const handleChangeLangChainApiKey = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     setLangchainApiKey(e.target.value);
     setItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY, e.target.value);
+  };
+
+  const handleChangeGcpServiceAccountKey = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    setGcpServiceAccountKey(e.target.value);
+    setItem(GCP_SERVICE_ACCOUNT_KEY_LOCAL_STORAGE_KEY, e.target.value);
   };
 
   const handleRunBackfill = async () => {
@@ -123,7 +154,7 @@ export function SettingsPopover() {
           <div className="space-y-2">
             <h4 className="font-medium leading-none">Settings</h4>
             <p className="text-sm text-muted-foreground">
-              Configuration settings for Agent Inbox
+              Configuration settings for FIONAA
             </p>
           </div>
           <div className="flex flex-col items-start gap-4 w-full">
@@ -145,6 +176,26 @@ export function SettingsPopover() {
                 required
                 value={langchainApiKey}
                 onChange={handleChangeLangChainApiKey}
+              />
+            </div>
+            <div className="flex flex-col items-start gap-2 w-full border-t pt-4">
+              <div className="flex flex-col gap-1 w-full items-start">
+                <Label htmlFor="gcp-service-account-key">
+                  GCP Service Account Key (JSON)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Paste your Google Cloud Platform service account key JSON here
+                  to authenticate file access from Google Cloud Storage. This
+                  value is stored in your browser&apos;s local storage.
+                </p>
+              </div>
+              <Textarea
+                id="gcp-service-account-key"
+                placeholder='{"type": "service_account", "project_id": "...", ...}'
+                className="min-w-full font-mono text-xs"
+                rows={6}
+                value={gcpServiceAccountKey}
+                onChange={handleChangeGcpServiceAccountKey}
               />
             </div>
             {!backfillCompleted && (
