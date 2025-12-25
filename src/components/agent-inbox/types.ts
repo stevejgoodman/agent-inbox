@@ -52,6 +52,18 @@ export type HumanResponseWithEdits = HumanResponse &
   );
 
 /**
+ * Email attachment structure.
+ */
+export type EmailAttachment = {
+  id: string;
+  filename: string;
+  content_type: string;
+  size?: number;
+  url?: string;
+  content?: string; // Base64 encoded content
+};
+
+/**
  * Email data structure used in the thread values.
  */
 export type Email = {
@@ -64,6 +76,7 @@ export type Email = {
   send_time: string | undefined;
   read?: boolean;
   status?: "in-queue" | "processing" | "hitl" | "done";
+  attachments?: EmailAttachment[];
 };
 
 /**

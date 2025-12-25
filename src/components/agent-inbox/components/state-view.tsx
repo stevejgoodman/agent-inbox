@@ -268,10 +268,13 @@ export function StateView({
   return (
     <div className="overflow-y-auto pl-6 border-t-[1px] lg:border-t-[0px] lg:border-l-[1px] border-gray-100 flex flex-row gap-0 w-full relative">
       {view === "description" && isInterrupted && (
-        <InterruptedDescriptionView description={description} />
+        <InterruptedDescriptionView
+          description={description}
+          threadValues={threadValues}
+        />
       )}
       {view === "description" && !isInterrupted && (
-        <NonInterruptedDescriptionView />
+        <NonInterruptedDescriptionView threadValues={threadValues} />
       )}
       {view === "state" && (
         <ThreadStateView threadValues={threadValues} expanded={expanded} />
